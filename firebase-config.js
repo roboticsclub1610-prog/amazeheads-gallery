@@ -1,10 +1,10 @@
-// firebase-config.js
-// Replace with your Firebase Web app config (from Firebase Console)
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAMBcb42DCrajz9VNFKXBtoeWDrMlZ9CwE",
+  authDomain: "exhibition-d2a2a.firebaseapp.com",
+  projectId: "exhibition-d2a2a",
+  storageBucket: "exhibition-d2a2a.firebasestorage.app",
+  messagingSenderId: "147308882686",
+  appId: "1:147308882686:web:232bc99e4b7d6ab3e493af",
+  measurementId: "G-88SB65JLPS"
 };
