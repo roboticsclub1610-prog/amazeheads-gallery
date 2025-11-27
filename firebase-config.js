@@ -5,6 +5,5 @@ export const firebaseConfig = {
   storageBucket: "exhibition-d2a2a.appspot.com",
   messagingSenderId: "147308882686",
   appId: "1:147308882686:web:232bc99e4b7d6ab3e493af",
-  measurementId: "G-88SB65JLPS",
-  databaseURL: "https://exhibition-d2a2a-default-rtdb.firebaseio.com/"
+  measurementId: "G-88SB65JLPS"
 };
