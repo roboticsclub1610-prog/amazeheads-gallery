@@ -1,10 +1,10 @@
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAMBcb42DCrajz9VNFKXBtoeWDrMlZ9CwE",
   authDomain: "exhibition-d2a2a.firebaseapp.com",
   projectId: "exhibition-d2a2a",
-  storageBucket: "exhibition-d2a2a.firebasestorage.app",
+  storageBucket: "exhibition-d2a2a.appspot.com",
   messagingSenderId: "147308882686",
   appId: "1:147308882686:web:232bc99e4b7d6ab3e493af",
-  measurementId: "G-88SB65JLPS"
+  measurementId: "G-88SB65JLPS",
+  databaseURL: "https://exhibition-d2a2a-default-rtdb.firebaseio.com/"
 };
