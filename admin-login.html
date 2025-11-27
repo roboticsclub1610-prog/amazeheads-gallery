@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Login · AmazeHeads</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <div style="max-width:480px;margin:60px auto" class="panel">
+      <h2 style="margin:0 0 8px">Admin Sign-in</h2>
+      <div class="small">Sign in with your Firebase admin account</div>
+      <div style="margin-top:12px">
+        <input id="email" class="input" type="email" placeholder="Email">
+        <input id="password" class="input" type="password" placeholder="Password" style="margin-top:8px">
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="loginBtn" class="btn">Sign in</button>
+          <a href="index.html" class="btn" style="background:#94a3b8">Back</a>
+        </div>
+        <div id="err" style="color:#ff6b6b;margin-top:8px"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { loginEmail } from './helpers.js';
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('err');
+    btn.addEventListener('click', async () => {
+      err.textContent = '';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { err.textContent = 'Enter credentials'; return; }
+      btn.disabled = true; btn.textContent='Signing...';
+      try {
+        await loginEmail(email, password);
+        location.href = 'admin-dashboard.html';
+      } catch (e) {
+        err.textContent = e.message || 'Login failed';
+      } finally { btn.disabled = false; btn.textContent='Sign in'; }
+    });
+  </script>
+</body>
+</html>

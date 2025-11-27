@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Amazeheads Robotics</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b0c10;
+            color: white;
+        }
+
+        .header {
+            background: #1f2833;
+            padding: 20px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            box-shadow: 0 0 15px #45f3ff;
+        }
+
+        .container {
+            width: 90%;
+            margin: auto;
+            margin-top: 40px;
+            padding: 30px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #45f3ff;
+        }
+
+        .upload-box {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #45f3ff;
+            border-radius: 10px;
+        }
+
+        input[type="file"] {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 20px;
+            background: #45f3ff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background: #00d4ff;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">Amazeheads Robotics — Admin Panel</div>
+
+    <div class="container">
+        <h2>Upload Media (Images / Videos)</h2>
+
+        <div class="upload-box">
+            <label>Select a file to upload:</label><br>
+            <input type="file" id="fileInput">
+            <br>
+            <button onclick="uploadFile()">Upload</button>
+        </div>
+
+        <div id="status"></div>
+
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } 
+        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { getDatabase, push, ref as dbRef, set }
+        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // TODO: REPLACE THIS WITH YOUR OWN FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_DOMAIN.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const database = getDatabase(app);
+
+        window.uploadFile = function () {
+            const file = document.getElementById("fileInput").files[0];
+            if (!file) {
+                document.getElementById("status").innerHTML = "Please select a file.";
+                return;
+            }
+
+            const storagePath = `uploads/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, storagePath);
+
+            document.getElementById("status").innerHTML = "Uploading...";
+
+            uploadBytes(storageRef, file).then(() => {
+                getDownloadURL(storageRef).then((url) => {
+
+                    const dbPath = dbRef(database, "gallery/");
+                    const newFileRef = push(dbPath);
+
+                    set(newFileRef, {
+                        url: url,
+                        type: file.type.includes("video") ? "video" : "image"
+                    });
+
+                    document.getElementById("status").innerHTML =
+                        "Upload Complete ✔<br> Added to Gallery!";
+                });
+            });
+        };
+    </script>
+
+</body>
+</html>

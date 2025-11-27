@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AmazeHeads — Gallery</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <h1>🤖 AmazeHeads — Project Gallery</h1>
+    <div class="controls">
+      <a class="btn" href="admin-login.html">Admin</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <h2 style="margin:0">Project Gallery</h2>
+        <div class="small">Select a folder to view related images & videos</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <div style="width:300px;">
+        <div class="panel">
+          <h3 style="margin:0 0 8px">Folders</h3>
+          <div id="foldersList"></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:320px">
+        <div class="panel">
+          <h3 style="margin:0 0 8px" id="currentFolderTitle">All Media</h3>
+          <div id="gallery" class="grid" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">© AmazeHeads Robotics 2025</footer>
+
+  <script type="module">
+    import { subscribeFolders, subscribeMedia } from './helpers.js';
+
+    const foldersList = document.getElementById('foldersList');
+    const galleryEl = document.getElementById('gallery');
+    const currentFolderTitle = document.getElementById('currentFolderTitle');
+
+    let currentFolderId = null;
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+    function renderFolders(list){
+      foldersList.innerHTML = '';
+      const allBtn = document.createElement('div');
+      allBtn.className = 'list-item';
+      allBtn.style.cursor='pointer';
+      allBtn.innerText = 'All media';
+      allBtn.onclick = () => { currentFolderId = null; currentFolderTitle.innerText = 'All Media'; subscribeMedia(renderGallery); }
+      foldersList.appendChild(allBtn);
+
+      list.forEach(f => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.style.cursor='pointer';
+        el.innerText = f.name;
+        el.onclick = () => {
+          currentFolderId = f.id;
+          currentFolderTitle.innerText = f.name;
+          subscribeMedia(renderGallery, f.id);
+        };
+        foldersList.appendChild(el);
+      });
+    }
+
+    function renderGallery(items){
+      galleryEl.innerHTML = '';
+      if (!items.length) {
+        galleryEl.innerHTML = `<div style="grid-column:1/-1;padding:36px;text-align:center;color:#6b7280;">
+          No media yet in this folder.
+        </div>`;
+        return;
+      }
+      items.forEach(it => {
+        const el = document.createElement('article');
+        el.className = 'card';
+        if (it.type === 'video') {
+          el.innerHTML = `<video controls src="${it.url}"></video>
+            <div class="meta"><div style="font-weight:600">${escapeHtml(it.name)}</div>
+            <div class="small">${new Date(it.createdAt?.toDate?.()||Date.now()).toLocaleString()}</div></div>`;
+        } else {
+          el.innerHTML = `<img src="${it.url}" alt="${escapeHtml(it.name)}">
+            <div class="meta"><div style="font-weight:600">${escapeHtml(it.name)}</div>
+            <div class="small">${new Date(it.createdAt?.toDate?.()||Date.now()).toLocaleString()}</div></div>`;
+        }
+        galleryEl.appendChild(el);
+      });
+    }
+
+    subscribeFolders(renderFolders);
+    subscribeMedia(renderGallery);
+  </script>
+</body>
+</html>

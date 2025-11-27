@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Dashboard · AmazeHeads</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <h1>Admin · AmazeHeads</h1>
+    <div class="controls">
+      <button id="logoutBtn" class="btn" style="background:#94a3b8">Logout</button>
+      <a href="index.html" class="btn">View Site</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="header-row">
+      <div>
+        <h2 style="margin:0">Admin Dashboard</h2>
+        <div class="small">Create folders, upload media, and manage files</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:300px">
+        <div class="panel">
+          <h3 style="margin:0 0 8px">Folders</h3>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="folderName" class="input" placeholder="New folder name">
+            <button id="createFolderBtn" class="btn">Create</button>
+          </div>
+          <div id="foldersList"></div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h3 style="margin:0 0 8px">Upload media</h3>
+          <div class="upload-box">
+            <select id="folderSelect" class="input">
+              <option value="">/ root /</option>
+            </select>
+            <input id="fileInput" type="file" class="input" accept="image/*,video/*" style="margin-top:8px" />
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button id="uploadBtn" class="btn">Upload</button>
+              <div id="progress" class="small" style="align-self:center"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:2;min-width:320px">
+        <div class="panel">
+          <h3 style="margin:0 0 8px">Media Items</h3>
+          <div id="mediaList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">© AmazeHeads Robotics</footer>
+
+  <script type="module">
+    import {
+      onAuthChange, logout, createFolder, subscribeFolders, subscribeMedia,
+      uploadMediaFile, deleteMediaItem, renameMedia, moveMedia
+    } from './helpers.js';
+
+    // protect route
+    onAuthChange(user => { if (!user) location.href='admin-login.html'; });
+
+    const createFolderBtn = document.getElementById('createFolderBtn');
+    const folderNameInput = document.getElementById('folderName');
+    const foldersList = document.getElementById('foldersList');
+    const folderSelect = document.getElementById('folderSelect');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const progressEl = document.getElementById('progress');
+    const mediaList = document.getElementById('mediaList');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    let currentFolders = [];
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    function renderFolders(folders){
+      currentFolders = folders;
+      foldersList.innerHTML = '';
+      folderSelect.innerHTML = '<option value="">/ root /</option>';
+      folders.forEach(f => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.innerHTML = `<div style="font-weight:600">${escapeHtml(f.name)}</div>
+          <div style="display:flex;gap:8px">
+            <button data-id="${f.id}" class="btn renameFolder" style="background:#ffd166;color:#000">Rename</button>
+            <button data-id="${f.id}" class="btn" style="background:#ff6b6b">Delete</button>
+          </div>`;
+        foldersList.appendChild(el);
+
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.textContent = f.name;
+        folderSelect.appendChild(opt);
+      });
+    }
+
+    subscribeFolders(renderFolders);
+
+    createFolderBtn.addEventListener('click', async () => {
+      const name = folderNameInput.value.trim();
+      if (!name) return alert('Enter folder name');
+      createFolderBtn.disabled = true;
+      try { await createFolder(name, null); folderNameInput.value = ''; }
+      catch (e) { alert('Create failed: '+e.message); }
+      createFolderBtn.disabled = false;
+    });
+
+    // upload
+    uploadBtn.addEventListener('click', async () => {
+      const f = fileInput.files[0];
+      if (!f) return alert('Choose a file');
+      const folderId = folderSelect.value || null;
+      uploadBtn.disabled = true; progressEl.textContent = 'Uploading...';
+      try {
+        await uploadMediaFile(f, folderId, null, pct => progressEl.textContent = pct + '%');
+        fileInput.value = '';
+      } catch (e) { alert('Upload failed: '+(e.message||e)); }
+      uploadBtn.disabled = false; setTimeout(()=>progressEl.textContent='',1200);
+    });
+
+    // media rendering
+    let currentMedia = [];
+    function renderMedia(list){
+      currentMedia = list;
+      mediaList.innerHTML = '';
+      if (!list.length) { mediaList.innerHTML = '<div class="small">No media</div>'; return; }
+      list.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.style.alignItems='center';
+        div.innerHTML = `<div style="max-width:70%">
+            <div style="font-weight:600">${escapeHtml(it.name)}</div>
+            <div class="small">${it.type} · ${new Date(it.createdAt?.toDate?.()||Date.now()).toLocaleString()}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <a href="${it.url}" target="_blank" class="small">Open</a>
+            <button class="btn renameMedia" data-id="${it.id}" style="background:#ffd166;color:#000">Rename</button>
+            <select class="input folderMove" data-id="${it.id}">
+              <option value="">/ root /</option>
+              ${currentFolders.map(f=>`<option value="${f.id}" ${f.id===it.folderId?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}
+            </select>
+            <button class="btn deleteMedia" data-id="${it.id}" style="background:#ff6b6b">Delete</button>
+          </div>`;
+        mediaList.appendChild(div);
+      });
+    }
+
+    subscribeMedia(renderMedia);
+
+    // actions: delete, rename, move
+    mediaList.addEventListener('click', async (e) => {
+      const del = e.target.closest('button.deleteMedia');
+      if (del) {
+        const id = del.getAttribute('data-id');
+        if (!confirm('Delete this media?')) return;
+        const it = currentMedia.find(x=>x.id===id);
+        await deleteMediaItem({ id, storagePath: it.storagePath });
+        return;
+      }
+      const ren = e.target.closest('button.renameMedia');
+      if (ren) {
+        const id = ren.getAttribute('data-id');
+        const it = currentMedia.find(x=>x.id===id);
+        const newName = prompt('New filename (include extension):', it.name);
+        if (!newName) return;
+        await renameMedia(id, newName);
+        return;
+      }
+    });
+
+    // move via select change
+    mediaList.addEventListener('change', async (e) => {
+      const sel = e.target.closest('select.folderMove');
+      if (!sel) return;
+      const id = sel.getAttribute('data-id');
+      const target = sel.value || null;
+      await moveMedia(id, target);
+    });
+
+    // folder list rename/delete
+    foldersList.addEventListener('click', async (e) => {
+      const ren = e.target.closest('button.renameFolder');
+      const del = e.target.closest('button[style*="ff6b6b"]');
+      if (ren) {
+        const id = ren.getAttribute('data-id');
+        const f = currentFolders.find(x=>x.id===id);
+        const newName = prompt('New folder name:', f.name);
+        if (!newName) return;
+        try { await renameFolder(id, newName); } catch(e) { alert('Rename failed: '+e.message); }
+      }
+      if (del) {
+        const id = del.getAttribute('data-id');
+        if (!confirm('Delete folder? Ensure it is empty.')) return;
+        try { await deleteFolder(id); } catch(e) { alert('Delete failed: '+e.message); }
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => { await logout(); location.href='admin-login.html'; });
+
+    // helper imports for renameFolder/deleteFolder used above
+    import('./helpers.js').then(h => { window.renameFolder = h.renameFolder; window.deleteFolder = h.deleteFolder; });
+  </script>
+</body>
+</html>
